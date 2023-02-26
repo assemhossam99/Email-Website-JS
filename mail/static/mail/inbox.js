@@ -8,13 +8,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // By default, load the inbox
   load_mailbox('inbox'); 
+  return false;
 });
+
+function css(element, style){
+  for (const property in style)
+        element.style[property] = style[property];
+}
 
 function compose_email() {
 
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
+  document.querySelector('#mail-view').style.display = 'none';
 
   // Clear out composition fields
   document.querySelector('#compose-recipients').value = '';
@@ -51,11 +58,47 @@ function compose_email() {
   }
 }
 
+function addEmailElement(email, element){
+  const senderElement = document.createElement('span');
+      senderElement.innerHTML = email.sender;
+      css(senderElement, {
+        'font-weight': 'bold',
+        'float': 'left',
+        'padding-right' : '10px',
+        'font-size': 'large'
+      })
+
+      const subjectElement = document.createElement('span');
+      subjectElement.innerHTML = email.subject;
+
+      const timeStamp = document.createElement('span');
+      timeStamp.innerHTML = email.timestamp;
+      css(timeStamp, {
+        'color' : 'gray',
+        'float': 'right'
+      })
+
+      element.appendChild(senderElement);
+      element.appendChild(subjectElement);
+      element.appendChild(timeStamp);
+      css(element, {
+        'border': 'solid',
+        'padding': '10px',
+        'margin': '10px'
+      })
+      if(email.read == false){
+        element.style.backgroundColor = 'lightgray';
+      }
+      document.querySelector('#emails-view').append(element);
+      
+}
+
 function load_mailbox(mailbox) {
   
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
+  document.querySelector('#mail-view').style.display = 'none';
 
   // Show the mailbox name
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
@@ -68,21 +111,52 @@ function load_mailbox(mailbox) {
     for(let i = 0; i < emails.length; i++){
       let email = emails[i];
       const element = document.createElement('div');
-      const senderElement = document.createElement('div');
-      senderElement.innerHTML = email.sender;
-      senderElement.style.fontWeight = 'bold';
-      senderElement.style.float = 'left';
-      senderElement.style.paddingRight = '20px';
-
-      const subjectElement = document.createElement('div');
-      subjectElement.innerHTML = email.subject;
-
-      element.appendChild(senderElement);
-      element.appendChild(subjectElement);
-      element.style.border = 'solid';
-      element.style.padding = '10px'; 
-      element.style.margin = '5px';
-      document.querySelector('#emails-view').append(element);
+      addEmailElement(email, element);
+      element.addEventListener('click', ()=>{
+        fetch(`/emails/${email.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+              read: true
+          })
+        })
+        load_mail(email);
+      })
     }
+    
 });
+}
+
+function appendChiledElement(email, element, newElement, key, value){
+  newElement.innerHTML = key + ': ' + value;
+  element.appendChild(newElement);
+}
+
+function addMailContent(email, element){
+  const senderElement = document.createElement('div');
+  appendChiledElement(email, element, senderElement, 'Sender', email.sender);
+
+  const recipientsElement = document.createElement('div');
+  appendChiledElement(email, element, recipientsElement, 'Recipients',  email.recipients);
+
+  const subjectElement = document.createElement('div');
+  appendChiledElement(email, element, subjectElement, 'Subject: ', email.subject);
+
+  const bodyElement = document.createElement('div');
+  appendChiledElement(email, element, bodyElement, 'Body', email.body);
+}
+
+function load_mail(email){
+  document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#compose-view').style.display = 'none';
+  document.querySelector('#mail-view').style.display = 'block';
+  document.querySelector('#mail-view').innerHTML = '';
+  
+  const mailElement = document.createElement('div');
+  
+  addMailContent(email, mailElement);
+  css(mailElement, {
+    'border' : 'solid',
+    'border-weight' : '1px'
+  })
+  document.querySelector('#mail-view').append(mailElement);
 }
