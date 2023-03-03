@@ -17,7 +17,7 @@ function css(element, style){
 }
 
 function compose_email() {
-
+ 
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
@@ -94,15 +94,15 @@ function addEmailElement(email, element){
 }
 
 function load_mailbox(mailbox) {
-  
+  console.log("herree");
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
   document.querySelector('#mail-view').style.display = 'none';
 
   // Show the mailbox name
+  document.querySelector('#emails-view').innerHTML = '';
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
-
   fetch(`/emails/${mailbox}`)
   .then(response => response.json())
   .then(emails => {
@@ -149,7 +149,7 @@ function load_mail(email){
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'none';
   document.querySelector('#mail-view').style.display = 'block';
-  document.querySelector('#mail-view').innerHTML = '';
+  document.querySelector('#mail-view-text').innerHTML = '';
   
   const mailElement = document.createElement('div');
   
@@ -158,5 +158,44 @@ function load_mail(email){
     'border' : 'solid',
     'border-weight' : '1px'
   })
-  document.querySelector('#mail-view').append(mailElement);
+  document.querySelector('#mail-view-text').append(mailElement);
+
+  const archiveButton = document.querySelector('#archive-button');
+  const senderEmail = document.querySelector('h2').innerHTML;
+  fetch(`/emails/${email.id}`)
+  .then(response => response.json())
+  .then(curEmail => {
+    if(senderEmail === curEmail.sender){
+      archiveButton.style.display = 'none';
+    }
+    else 
+    {
+      archiveButton.style.display = 'block';
+    }
+      if(curEmail.archived === true){
+        archiveButton.value = 'Unarchive';
+      } else {
+        archiveButton.value = 'Archive';
+      }
+      document.querySelector('#archive-form').onsubmit = ()=>{
+        if(curEmail.archived == true){
+          archiveButton.value = 'Archive';
+          fetch(`/emails/${curEmail.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                archived : false
+            })
+          })
+        } else {
+          archiveButton.value = 'Unarchive';
+          fetch(`/emails/${curEmail.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                archived : true
+            })
+          })
+        }
+      }
+  });
+  return false;
 }
